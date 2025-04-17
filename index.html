@@ -267,14 +267,21 @@
             // Обработчики для кнопок типа матраса
             document.querySelectorAll('.type-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    switchType(this.dataset.type);
+                    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    document.getElementById('regular-tab').classList.remove('active');
+                    document.getElementById('trapezoid-tab').classList.remove('active');
+                    document.getElementById(`${this.dataset.type}-tab`).classList.add('active');
                 });
             });
 
             // Обработчики для кнопок выбора ткани
             document.querySelectorAll('.fabric-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    selectFabric(this.dataset.fabric);
+                    document.querySelectorAll('.fabric-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedFabric = this.dataset.fabric;
                 });
             });
 
@@ -287,37 +294,20 @@
             document.getElementById('dynamic-text-block').addEventListener('click', copyToClipboard);
         });
         
-        function switchType(type) {
-            document.querySelectorAll('.type-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`.type-btn[data-type="${type}"]`).classList.add('active');
-            
-            document.getElementById('regular-tab').classList.remove('active');
-            document.getElementById('trapezoid-tab').classList.remove('active');
-            document.getElementById(`${type}-tab`).classList.add('active');
-        }
-        
-        function selectFabric(fabric) {
-            document.querySelectorAll('.fabric-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`.fabric-btn[data-fabric="${fabric}"]`).classList.add('active');
-            selectedFabric = fabric;
-        }
-        
         function parseQuickInput() {
             const input = document.getElementById('quick-size').value;
             const normalizedInput = input.replace(/[*,х×]/g, 'x');
             const dimensions = normalizedInput.split('x').map(Number).filter(n => !isNaN(n));
             
             if (dimensions.length === 3) {
-                switchType('regular');
+                // Переключаем на обычный матрас
+                document.querySelector('.type-btn[data-type="regular"]').click();
                 document.getElementById('length').value = dimensions[0];
                 document.getElementById('width').value = dimensions[1];
                 document.getElementById('height').value = dimensions[2];
             } else if (dimensions.length === 4) {
-                switchType('trapezoid');
+                // Переключаем на трапецию
+                document.querySelector('.type-btn[data-type="trapezoid"]').click();
                 document.getElementById('top-length').value = dimensions[0];
                 document.getElementById('bottom-length').value = dimensions[1];
                 document.getElementById('depth').value = dimensions[2];
@@ -342,10 +332,10 @@
         }
         
         function calculate() {
-            const isTrapezoid = document.getElementById('trapezoid-tab').classList.contains('active');
+            const isTrapezoid = document.querySelector('.type-btn[data-type="trapezoid"]').classList.contains('active');
             const quantity = parseInt(document.getElementById('quantity').value) || 1;
             
-            let length, width, height, foamCost, fabric, sewingCost;
+            let length, width, height, topLength, bottomLength, depth, foamCost, fabric, sewingCost;
             
             if (!isTrapezoid) {
                 length = parseFloat(document.getElementById('length').value);
@@ -369,9 +359,9 @@
                 else sewingCost = 1250;
                 
             } else {
-                const topLength = parseFloat(document.getElementById('top-length').value);
-                const bottomLength = parseFloat(document.getElementById('bottom-length').value);
-                const depth = parseFloat(document.getElementById('depth').value);
+                topLength = parseFloat(document.getElementById('top-length').value);
+                bottomLength = parseFloat(document.getElementById('bottom-length').value);
+                depth = parseFloat(document.getElementById('depth').value);
                 height = parseFloat(document.getElementById('trap-height').value);
                 
                 length = Math.max(topLength, bottomLength);
@@ -488,12 +478,16 @@
             document.getElementById('additional-panel').style.display = 'none';
             document.getElementById('add-mattress').style.display = 'none';
             document.getElementById('reset-calc').style.display = 'none';
-            selectFabric('velur');
+            
+            // Сброс выбора ткани
+            document.querySelectorAll('.fabric-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.fabric-btn[data-fabric="velur"]').classList.add('active');
+            selectedFabric = 'velur';
         }
         
         function generateTexts() {
             let text = '✍️ЦЕНА:\n';
-            const isTrapezoid = document.getElementById('trapezoid-tab').classList.contains('active');
+            const isTrapezoid = document.querySelector('.type-btn[data-type="trapezoid"]').classList.contains('active');
             const fabricName = fabricNames[selectedFabric];
             
             // Группируем матрасы для текста
