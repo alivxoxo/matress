@@ -157,6 +157,11 @@
             background: #f0f8ff;
             border-radius: 5px;
         }
+        .quantity-input {
+            width: 60px !important;
+            display: inline-block;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
@@ -164,22 +169,22 @@
         <h1>Калькулятор матрасов</h1>
         
         <div class="type-selector">
-            <div class="type-btn active" onclick="switchType('regular', event)">Обычный</div>
-            <div class="type-btn" onclick="switchType('trapezoid', event)">Трапеция</div>
+            <div class="type-btn active" data-type="regular">Обычный</div>
+            <div class="type-btn" data-type="trapezoid">Трапеция</div>
         </div>
 
         <div class="fabric-selector">
-            <div class="fabric-btn active" onclick="selectFabric('velur', event)">Велюр Антивандальный</div>
-            <div class="fabric-btn" onclick="selectFabric('rog_antivandal', event)">Рогожка Антивандальная</div>
-            <div class="fabric-btn" onclick="selectFabric('rog_meshok', event)">Рогожка с эффектом мешковины</div>
-            <div class="fabric-btn" onclick="selectFabric('oxford', event)">Оксфорд</div>
+            <div class="fabric-btn active" data-fabric="velur">Велюр Антивандальный</div>
+            <div class="fabric-btn" data-fabric="rog_antivandal">Рогожка Антивандальная</div>
+            <div class="fabric-btn" data-fabric="rog_meshok">Рогожка с эффектом мешковины</div>
+            <div class="fabric-btn" data-fabric="oxford">Оксфорд</div>
         </div>
 
         <div class="quick-input">
             <label for="quick-size">Быстрый ввод размеров:</label>
             <input type="text" id="quick-size" placeholder="Например: 140x50x8 или 140*150*45*8">
             <div class="dimension-hint">Введите размеры через x или * (140x50x8 для обычного, 140x150x45x8 для трапеции)</div>
-            <button onclick="parseQuickInput()">Применить размеры</button>
+            <button id="apply-sizes">Применить размеры</button>
         </div>
         
         <div id="regular-tab" class="tab active">
@@ -215,10 +220,15 @@
                 <input type="number" id="trap-height" value="8">
             </div>
         </div>
+
+        <div class="input-group">
+            <label for="quantity">Количество матрасов:</label>
+            <input type="number" id="quantity" value="1" min="1" class="quantity-input">
+        </div>
         
-        <button onclick="calculate()">Рассчитать стоимость</button>
-        <button class="add-mattress-btn" onclick="addMattress()" style="display: none;">+ Добавить еще матрас</button>
-        <button class="reset-btn" onclick="resetCalculator()" style="display: none;">Сбросить все</button>
+        <button id="calculate-btn">Рассчитать стоимость</button>
+        <button class="add-mattress-btn" id="add-mattress" style="display: none;">+ Добавить еще матрас</button>
+        <button class="reset-btn" id="reset-calc" style="display: none;">Сбросить все</button>
         
         <div class="result" id="result">
             Введите параметры и нажмите "Рассчитать"
@@ -227,7 +237,7 @@
         <div class="additional-panel" id="additional-panel">
             <h3>Тексты для копирования:</h3>
             
-            <div class="copy-text" onclick="copyToClipboard(this)">
+            <div class="copy-text" id="static-text-block">
                 <div id="static-text">☁️Матрас CLOUD 
 🔹Создан из пены с ортопедическим эффектом.
 🔹Чехол из антивандальной ткани полностью съемный и его можно стирать! 
@@ -235,7 +245,7 @@
                 <span class="copy-notification">Скопировано!</span>
             </div>
             
-            <div class="copy-text" onclick="copyToClipboard(this)">
+            <div class="copy-text" id="dynamic-text-block">
                 <div id="dynamic-text"><!-- Текст будет сгенерирован автоматически --></div>
                 <span class="copy-notification">Скопировано!</span>
             </div>
@@ -251,23 +261,48 @@
             'rog_meshok': 'Рогожка с эффектом мешковины',
             'oxford': 'Оксфорд'
         };
+
+        // Инициализация обработчиков событий
+        document.addEventListener('DOMContentLoaded', function() {
+            // Обработчики для кнопок типа матраса
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    switchType(this.dataset.type);
+                });
+            });
+
+            // Обработчики для кнопок выбора ткани
+            document.querySelectorAll('.fabric-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    selectFabric(this.dataset.fabric);
+                });
+            });
+
+            // Обработчики для других кнопок
+            document.getElementById('apply-sizes').addEventListener('click', parseQuickInput);
+            document.getElementById('calculate-btn').addEventListener('click', calculate);
+            document.getElementById('add-mattress').addEventListener('click', addMattress);
+            document.getElementById('reset-calc').addEventListener('click', resetCalculator);
+            document.getElementById('static-text-block').addEventListener('click', copyToClipboard);
+            document.getElementById('dynamic-text-block').addEventListener('click', copyToClipboard);
+        });
         
-        function switchType(type, event) {
+        function switchType(type) {
             document.querySelectorAll('.type-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.currentTarget.classList.add('active');
+            document.querySelector(`.type-btn[data-type="${type}"]`).classList.add('active');
             
             document.getElementById('regular-tab').classList.remove('active');
             document.getElementById('trapezoid-tab').classList.remove('active');
-            document.getElementById(type + '-tab').classList.add('active');
+            document.getElementById(`${type}-tab`).classList.add('active');
         }
         
-        function selectFabric(fabric, event) {
+        function selectFabric(fabric) {
             document.querySelectorAll('.fabric-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.currentTarget.classList.add('active');
+            document.querySelector(`.fabric-btn[data-fabric="${fabric}"]`).classList.add('active');
             selectedFabric = fabric;
         }
         
@@ -277,12 +312,12 @@
             const dimensions = normalizedInput.split('x').map(Number).filter(n => !isNaN(n));
             
             if (dimensions.length === 3) {
-                switchType('regular', {currentTarget: document.querySelector('.type-btn:nth-child(1)')});
+                switchType('regular');
                 document.getElementById('length').value = dimensions[0];
                 document.getElementById('width').value = dimensions[1];
                 document.getElementById('height').value = dimensions[2];
             } else if (dimensions.length === 4) {
-                switchType('trapezoid', {currentTarget: document.querySelector('.type-btn:nth-child(2)')});
+                switchType('trapezoid');
                 document.getElementById('top-length').value = dimensions[0];
                 document.getElementById('bottom-length').value = dimensions[1];
                 document.getElementById('depth').value = dimensions[2];
@@ -308,6 +343,7 @@
         
         function calculate() {
             const isTrapezoid = document.getElementById('trapezoid-tab').classList.contains('active');
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
             
             let length, width, height, foamCost, fabric, sewingCost;
             
@@ -364,29 +400,21 @@
                 `${topLength}x${bottomLength}x${depth}x${height}` : 
                 `${length}x${width}x${height}`;
             
-            // Проверяем, есть ли уже такой матрас
-            const existingMattress = mattresses.find(m => m.key === mattressKey);
-            
-            if (existingMattress) {
-                existingMattress.count++;
-                existingMattress.price = Math.round(totalCost);
-                existingMattress.recommendedPrice = Math.round(recommendedPrice);
-            } else {
-                mattresses.push({
-                    key: mattressKey,
-                    length: length,
-                    width: width,
-                    height: height,
-                    topLength: isTrapezoid ? topLength : null,
-                    bottomLength: isTrapezoid ? bottomLength : null,
-                    depth: isTrapezoid ? depth : null,
-                    count: 1,
-                    price: Math.round(totalCost),
-                    recommendedPrice: Math.round(recommendedPrice),
-                    fabric: selectedFabric,
-                    isTrapezoid: isTrapezoid
-                });
-            }
+            // Добавляем матрас с указанным количеством
+            mattresses.push({
+                key: mattressKey,
+                length: length,
+                width: width,
+                height: height,
+                topLength: isTrapezoid ? topLength : null,
+                bottomLength: isTrapezoid ? bottomLength : null,
+                depth: isTrapezoid ? depth : null,
+                count: quantity,
+                price: Math.round(totalCost),
+                recommendedPrice: Math.round(recommendedPrice),
+                fabric: selectedFabric,
+                isTrapezoid: isTrapezoid
+            });
             
             updateResultDisplay();
             generateTexts();
@@ -433,4 +461,112 @@
                 
                 // Общая сумма всех матрасов
                 const totalSum = mattresses.reduce((sum, m) => sum + (m.recommendedPrice * m.count), 0);
-                html +=
+                html += `<div style="margin-top: 15px; font-weight: bold;">
+                    <p>Итого: <span class="price-highlight">${totalSum} руб</span></p>
+                </div>`;
+            }
+            
+            resultDiv.innerHTML = html;
+            document.getElementById('add-mattress').style.display = 'block';
+            document.getElementById('reset-calc').style.display = 'block';
+            document.getElementById('additional-panel').style.display = 'block';
+        }
+        
+        function addMattress() {
+            document.getElementById('quantity').value = 1;
+            document.getElementById('length').focus();
+        }
+        
+        function resetCalculator() {
+            mattresses = [];
+            document.getElementById('length').value = '140';
+            document.getElementById('width').value = '50';
+            document.getElementById('height').value = '8';
+            document.getElementById('quantity').value = 1;
+            document.getElementById('quick-size').value = '';
+            document.getElementById('result').innerHTML = 'Введите параметры и нажмите "Рассчитать"';
+            document.getElementById('additional-panel').style.display = 'none';
+            document.getElementById('add-mattress').style.display = 'none';
+            document.getElementById('reset-calc').style.display = 'none';
+            selectFabric('velur');
+        }
+        
+        function generateTexts() {
+            let text = '✍️ЦЕНА:\n';
+            const isTrapezoid = document.getElementById('trapezoid-tab').classList.contains('active');
+            const fabricName = fabricNames[selectedFabric];
+            
+            // Группируем матрасы для текста
+            const groupedForText = {};
+            mattresses.forEach(mattress => {
+                const key = mattress.isTrapezoid ? 
+                    `${mattress.topLength}*${mattress.bottomLength}*${mattress.depth}*${mattress.height}` :
+                    `${mattress.length}*${mattress.width}*${mattress.height}`;
+                
+                if (!groupedForText[key]) {
+                    groupedForText[key] = {
+                        count: mattress.count,
+                        price: mattress.recommendedPrice
+                    };
+                } else {
+                    groupedForText[key].count += mattress.count;
+                }
+            });
+
+            if (isTrapezoid) {
+                text += `☁️Матрас CLOUD ${document.getElementById('trap-height').value} см в высоту, ${fabricName}:\n\n`;
+            } else {
+                const heights = [...new Set(mattresses.map(m => m.height))];
+                const sameHeight = heights.length === 1;
+                text += sameHeight ? 
+                    `☁️Матрас CLOUD ${heights[0]} см в высоту, ${fabricName}:\n\n` :
+                    `☁️Матрас CLOUD, ${fabricName}:\n\n`;
+            }
+
+            // Формируем текст с группировкой
+            for (const key in groupedForText) {
+                const item = groupedForText[key];
+                if (item.count > 1) {
+                    text += `${item.count} матраса ${key}: ${item.price * item.count} руб. (${item.price} × ${item.count})\n`;
+                } else {
+                    text += `Матрас ${key}: ${item.price} руб.\n`;
+                }
+            }
+
+            text += `\nДополнительное предложение:
+
+☁️Эффект облака для матраса: 990 руб. (Сумма указана за каждый метр в длину)
+
+🙈❗️Декоративная Подушка 35*35 СЮРПРИЗ (Только на момент получения вы узнаете цвет и ткань) - 290 руб.❗️
+
+🔹Подушка декоративная 40*40: 990 руб. 
+🔹Подушка классическая 40*40, толщиной 10 см: 1490 руб. 
+🔹Подушка под ноги: 1490 руб. 
+🔹Подлокотник: 1790 руб.
+🔹Подушка под спину: 1990 руб. 
+🔹Валик диаметр 14 см: 1490 руб
+
+🔸Антискользящее покрытие на выбор: 490 руб.
+- Силиконовые накладки
+- Самоклеящаяся лента-липучка
+
+👀Срок изготовления 6-13 дней
+
+🤝Гарантия 3 года!`;
+            
+            document.getElementById('dynamic-text').textContent = text;
+        }
+        
+        function copyToClipboard(event) {
+            const text = event.currentTarget.querySelector('div').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const notification = event.currentTarget.querySelector('.copy-notification');
+                notification.style.display = 'inline';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
