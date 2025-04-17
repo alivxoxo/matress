@@ -158,15 +158,15 @@
         <h1>Калькулятор матрасов</h1>
         
         <div class="type-selector">
-            <div class="type-btn active" onclick="switchType('regular')">Обычный</div>
-            <div class="type-btn" onclick="switchType('trapezoid')">Трапеция</div>
+            <div class="type-btn active" onclick="switchType('regular', event)">Обычный</div>
+            <div class="type-btn" onclick="switchType('trapezoid', event)">Трапеция</div>
         </div>
 
         <div class="fabric-selector">
-            <div class="fabric-btn active" onclick="selectFabric('velur')">Велюр Антивандальный</div>
-            <div class="fabric-btn" onclick="selectFabric('rog_antivandal')">Рогожка Антивандальная</div>
-            <div class="fabric-btn" onclick="selectFabric('rog_meshok')">Рогожка с эффектом мешковины</div>
-            <div class="fabric-btn" onclick="selectFabric('oxford')">Оксфорд</div>
+            <div class="fabric-btn active" onclick="selectFabric('velur', event)">Велюр Антивандальный</div>
+            <div class="fabric-btn" onclick="selectFabric('rog_antivandal', event)">Рогожка Антивандальная</div>
+            <div class="fabric-btn" onclick="selectFabric('rog_meshok', event)">Рогожка с эффектом мешковины</div>
+            <div class="fabric-btn" onclick="selectFabric('oxford', event)">Оксфорд</div>
         </div>
 
         <div class="quick-input">
@@ -246,7 +246,7 @@
             'oxford': 'Оксфорд'
         };
         
-        function switchType(type) {
+        function switchType(type, event) {
             document.querySelectorAll('.type-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
@@ -257,7 +257,7 @@
             document.getElementById(type + '-tab').classList.add('active');
         }
         
-        function selectFabric(fabric) {
+        function selectFabric(fabric, event) {
             document.querySelectorAll('.fabric-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
@@ -271,12 +271,12 @@
             const dimensions = normalizedInput.split('x').map(Number).filter(n => !isNaN(n));
             
             if (dimensions.length === 3) {
-                switchType('regular');
+                switchType('regular', {currentTarget: document.querySelector('.type-btn:nth-child(1)')});
                 document.getElementById('length').value = dimensions[0];
                 document.getElementById('width').value = dimensions[1];
                 document.getElementById('height').value = dimensions[2];
             } else if (dimensions.length === 4) {
-                switchType('trapezoid');
+                switchType('trapezoid', {currentTarget: document.querySelector('.type-btn:nth-child(2)')});
                 document.getElementById('top-length').value = dimensions[0];
                 document.getElementById('bottom-length').value = dimensions[1];
                 document.getElementById('depth').value = dimensions[2];
@@ -397,6 +397,7 @@
             document.getElementById('additional-panel').style.display = 'none';
             document.querySelector('.add-mattress-btn').style.display = 'none';
             document.querySelector('.reset-btn').style.display = 'none';
+            selectFabric('velur', {currentTarget: document.querySelector('.fabric-btn:nth-child(1)')});
         }
         
         function generateTexts() {
@@ -429,4 +430,47 @@
                 } else {
                     text += `☁️Матрас CLOUD, ${fabricName}:\n\n`;
                     
-                    mattresses
+                    mattresses.forEach(mattress => {
+                        text += `Матрас ${mattress.length}*${mattress.width}*${mattress.height}: ${mattress.recommendedPrice} руб.\n`;
+                    });
+                }
+            }
+            
+            text += `\nДополнительное предложение:
+
+☁️Эффект облака для матраса: 990 руб. (Сумма указана за каждый метр в длину)
+
+🙈❗️Декоративная Подушка 35*35 СЮРПРИЗ (Только на момент получения вы узнаете цвет и ткань) - 290 руб.❗️
+
+🔹Подушка декоративная 40*40: 990 руб. 
+🔹Подушка классическая 40*40, толщиной 10 см: 1490 руб. 
+🔹Подушка под ноги: 1490 руб. 
+🔹Подлокотник: 1790 руб.
+🔹Подушка под спину: 1990 руб. 
+🔹Валик диаметр 14 см: 1490 руб
+
+🔸Антискользящее покрытие на выбор: 490 руб.
+- Силиконовые накладки
+- Самоклеящаяся лента-липучка
+
+👀Срок изготовления 6-13 дней
+
+🤝Гарантия 3 года!`;
+            
+            document.getElementById('dynamic-text').textContent = text;
+            document.getElementById('additional-panel').style.display = 'block';
+        }
+        
+        function copyToClipboard(element) {
+            const text = element.querySelector('div').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const notification = element.querySelector('.copy-notification');
+                notification.style.display = 'inline';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
