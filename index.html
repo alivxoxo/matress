@@ -107,6 +107,11 @@
             color: #e74c3c;
             font-weight: bold;
         }
+        .recommended-price {
+            font-size: 24px;
+            color: #27ae60;
+            font-weight: bold;
+        }
         .quick-input {
             margin-bottom: 15px;
         }
@@ -300,13 +305,11 @@
             const dimensions = normalizedInput.split('x').map(Number).filter(n => !isNaN(n));
             
             if (dimensions.length === 3) {
-                // Переключаем на обычный матрас
                 document.querySelector('.type-btn[data-type="regular"]').click();
                 document.getElementById('length').value = dimensions[0];
                 document.getElementById('width').value = dimensions[1];
                 document.getElementById('height').value = dimensions[2];
             } else if (dimensions.length === 4) {
-                // Переключаем на трапецию
                 document.querySelector('.type-btn[data-type="trapezoid"]').click();
                 document.getElementById('top-length').value = dimensions[0];
                 document.getElementById('bottom-length').value = dimensions[1];
@@ -383,14 +386,14 @@
                 else sewingCost = 1250 + 250;
             }
             
-            const totalCost = (foamCost + sewingCost + (fabric * 300)) * 2.5;
+            const realCost = foamCost + sewingCost + (fabric * 300);
+            const totalCost = realCost * 2.5;
             const recommendedPrice = getRecommendedPrice(totalCost);
             
             const mattressKey = isTrapezoid ? 
                 `${topLength}x${bottomLength}x${depth}x${height}` : 
                 `${length}x${width}x${height}`;
             
-            // Добавляем матрас с указанным количеством
             mattresses.push({
                 key: mattressKey,
                 length: length,
@@ -400,6 +403,7 @@
                 bottomLength: isTrapezoid ? bottomLength : null,
                 depth: isTrapezoid ? depth : null,
                 count: quantity,
+                realCost: Math.round(realCost),
                 price: Math.round(totalCost),
                 recommendedPrice: Math.round(recommendedPrice),
                 fabric: selectedFabric,
@@ -423,11 +427,15 @@
                     if (!groupedMattresses[mattress.key]) {
                         groupedMattresses[mattress.key] = {
                             ...mattress,
-                            totalPrice: mattress.recommendedPrice * mattress.count
+                            totalPrice: mattress.price * mattress.count,
+                            totalRecommended: mattress.recommendedPrice * mattress.count,
+                            totalRealCost: mattress.realCost * mattress.count
                         };
                     } else {
                         groupedMattresses[mattress.key].count += mattress.count;
-                        groupedMattresses[mattress.key].totalPrice += mattress.recommendedPrice * mattress.count;
+                        groupedMattresses[mattress.key].totalPrice += mattress.price * mattress.count;
+                        groupedMattresses[mattress.key].totalRecommended += mattress.recommendedPrice * mattress.count;
+                        groupedMattresses[mattress.key].totalRealCost += mattress.realCost * mattress.count;
                     }
                 });
                 
@@ -441,18 +449,22 @@
                             <p><strong>Параметры:</strong> ${mattress.isTrapezoid ? 
                                 `${mattress.topLength}×${mattress.bottomLength}×${mattress.depth}×${mattress.height} см` : 
                                 `${mattress.length}×${mattress.width}×${mattress.height} см`}</p>
-                            ${mattress.count > 1 ? 
-                                `<p><strong>Количество:</strong> ${mattress.count} шт.</p>
-                                 <p><strong>Цена за 1 шт.:</strong> ${mattress.recommendedPrice} руб</p>
-                                 <p><strong>Общая стоимость:</strong> <span class="price-highlight">${mattress.totalPrice} руб</span></p>` :
-                                `<p><strong>Стоимость:</strong> <span class="price-highlight">${mattress.recommendedPrice} руб</span></p>`}
+                            <p><strong>Себестоимость:</strong> ${mattress.totalRealCost} руб</p>
+                            <p><strong>Реальная стоимость:</strong> <span class="price-highlight">${mattress.totalPrice} руб</span></p>
+                            <p><strong>Рекомендуемая цена:</strong> <span class="recommended-price">${mattress.totalRecommended} руб</span></p>
+                            ${mattress.count > 1 ? `<p><strong>Количество:</strong> ${mattress.count} шт.</p>` : ''}
                         </div>`;
                 }
                 
                 // Общая сумма всех матрасов
-                const totalSum = mattresses.reduce((sum, m) => sum + (m.recommendedPrice * m.count), 0);
+                const totalSum = mattresses.reduce((sum, m) => sum + (m.price * m.count), 0);
+                const totalRecommended = mattresses.reduce((sum, m) => sum + (m.recommendedPrice * m.count), 0);
+                const totalRealCost = mattresses.reduce((sum, m) => sum + (m.realCost * m.count), 0);
+                
                 html += `<div style="margin-top: 15px; font-weight: bold;">
-                    <p>Итого: <span class="price-highlight">${totalSum} руб</span></p>
+                    <p>Итого себестоимость: ${totalRealCost} руб</p>
+                    <p>Итого реальная стоимость: <span class="price-highlight">${totalSum} руб</span></p>
+                    <p>Итого рекомендуемая цена: <span class="recommended-price">${totalRecommended} руб</span></p>
                 </div>`;
             }
             
