@@ -151,6 +151,12 @@
         .reset-btn {
             background: #e74c3c !important;
         }
+        .mattress-group {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -354,123 +360,77 @@
             const totalCost = (foamCost + sewingCost + (fabric * 300)) * 2.5;
             const recommendedPrice = getRecommendedPrice(totalCost);
             
-            mattresses.push({
-                length: length,
-                width: width,
-                height: height,
-                price: Math.round(totalCost),
-                recommendedPrice: Math.round(recommendedPrice),
-                fabric: selectedFabric
-            });
+            const mattressKey = isTrapezoid ? 
+                `${topLength}x${bottomLength}x${depth}x${height}` : 
+                `${length}x${width}x${height}`;
             
-            document.getElementById('result').innerHTML = `
-                <h3>Результаты расчета:</h3>
-                <p><strong>Тип матраса:</strong> ${isTrapezoid ? 'Трапеция' : 'Обычный'}</p>
-                <p><strong>Ткань:</strong> ${fabricNames[selectedFabric]}</p>
-                <p><strong>Параметры:</strong> ${isTrapezoid ? 
-                    `${document.getElementById('top-length').value}×${document.getElementById('bottom-length').value}×${document.getElementById('depth').value}×${document.getElementById('trap-height').value} см` : 
-                    `${document.getElementById('length').value}×${document.getElementById('width').value}×${document.getElementById('height').value} см`}</p>
-                <p><strong>Итоговая цена:</strong> <span class="price-highlight">${Math.round(totalCost)} руб</span></p>
-                <p><strong>Рекомендуемая цена:</strong> <span class="price-highlight" style="color: #27ae60;">${Math.round(recommendedPrice)} руб</span></p>
-            `;
+            // Проверяем, есть ли уже такой матрас
+            const existingMattress = mattresses.find(m => m.key === mattressKey);
             
-            document.querySelector('.add-mattress-btn').style.display = 'block';
-            document.querySelector('.reset-btn').style.display = 'block';
+            if (existingMattress) {
+                existingMattress.count++;
+                existingMattress.price = Math.round(totalCost);
+                existingMattress.recommendedPrice = Math.round(recommendedPrice);
+            } else {
+                mattresses.push({
+                    key: mattressKey,
+                    length: length,
+                    width: width,
+                    height: height,
+                    topLength: isTrapezoid ? topLength : null,
+                    bottomLength: isTrapezoid ? bottomLength : null,
+                    depth: isTrapezoid ? depth : null,
+                    count: 1,
+                    price: Math.round(totalCost),
+                    recommendedPrice: Math.round(recommendedPrice),
+                    fabric: selectedFabric,
+                    isTrapezoid: isTrapezoid
+                });
+            }
+            
+            updateResultDisplay();
             generateTexts();
         }
         
-        function addMattress() {
-            document.getElementById('length').value = '';
-            document.getElementById('width').value = '';
-            document.getElementById('height').value = '';
-            document.getElementById('quick-size').value = '';
-            document.getElementById('length').focus();
-        }
-        
-        function resetCalculator() {
-            mattresses = [];
-            document.getElementById('length').value = '140';
-            document.getElementById('width').value = '50';
-            document.getElementById('height').value = '8';
-            document.getElementById('quick-size').value = '';
-            document.getElementById('result').innerHTML = 'Введите параметры и нажмите "Рассчитать"';
-            document.getElementById('additional-panel').style.display = 'none';
-            document.querySelector('.add-mattress-btn').style.display = 'none';
-            document.querySelector('.reset-btn').style.display = 'none';
-            selectFabric('velur', {currentTarget: document.querySelector('.fabric-btn:nth-child(1)')});
-        }
-        
-        function generateTexts() {
-            let text = '✍️ЦЕНА:\n';
-            const isTrapezoid = document.getElementById('trapezoid-tab').classList.contains('active');
-            const fabricName = fabricNames[selectedFabric];
+        function updateResultDisplay() {
+            const resultDiv = document.getElementById('result');
+            let html = '<h3>Результаты расчета:</h3>';
             
-            if (isTrapezoid) {
-                // Для трапеции выводим все 4 параметра
-                text += `☁️Матрас CLOUD ${document.getElementById('trap-height').value} см в высоту, ${fabricName}:\n\n`;
-                
-                mattresses.forEach(mattress => {
-                    const topLength = document.getElementById('top-length').value;
-                    const bottomLength = document.getElementById('bottom-length').value;
-                    const depth = document.getElementById('depth').value;
-                    const height = document.getElementById('trap-height').value;
-                    text += `Матрас ${topLength}*${bottomLength}*${depth}*${height}: ${mattress.recommendedPrice} руб.\n`;
-                });
+            if (mattresses.length === 0) {
+                html += '<p>Введите параметры и нажмите "Рассчитать"</p>';
             } else {
-                // Для обычного матраса проверяем одинаковую ли высоту
-                const heights = [...new Set(mattresses.map(m => m.height))];
-                const sameHeight = heights.length === 1;
+                // Группируем матрасы по ключу
+                const groupedMattresses = {};
+                mattresses.forEach(mattress => {
+                    if (!groupedMattresses[mattress.key]) {
+                        groupedMattresses[mattress.key] = {
+                            ...mattress,
+                            totalPrice: mattress.recommendedPrice * mattress.count
+                        };
+                    } else {
+                        groupedMattresses[mattress.key].count += mattress.count;
+                        groupedMattresses[mattress.key].totalPrice += mattress.recommendedPrice * mattress.count;
+                    }
+                });
                 
-                if (sameHeight) {
-                    text += `☁️Матрас CLOUD ${mattresses[0].height} см в высоту, ${fabricName}:\n\n`;
-                    
-                    mattresses.forEach(mattress => {
-                        text += `Матрас ${mattress.length}*${mattress.width}: ${mattress.recommendedPrice} руб.\n`;
-                    });
-                } else {
-                    text += `☁️Матрас CLOUD, ${fabricName}:\n\n`;
-                    
-                    mattresses.forEach(mattress => {
-                        text += `Матрас ${mattress.length}*${mattress.width}*${mattress.height}: ${mattress.recommendedPrice} руб.\n`;
-                    });
+                // Выводим сгруппированные матрасы
+                for (const key in groupedMattresses) {
+                    const mattress = groupedMattresses[key];
+                    html += `
+                        <div class="mattress-group">
+                            <p><strong>Тип матраса:</strong> ${mattress.isTrapezoid ? 'Трапеция' : 'Обычный'}</p>
+                            <p><strong>Ткань:</strong> ${fabricNames[mattress.fabric]}</p>
+                            <p><strong>Параметры:</strong> ${mattress.isTrapezoid ? 
+                                `${mattress.topLength}×${mattress.bottomLength}×${mattress.depth}×${mattress.height} см` : 
+                                `${mattress.length}×${mattress.width}×${mattress.height} см`}</p>
+                            ${mattress.count > 1 ? 
+                                `<p><strong>Количество:</strong> ${mattress.count} шт.</p>
+                                 <p><strong>Цена за 1 шт.:</strong> ${mattress.recommendedPrice} руб</p>
+                                 <p><strong>Общая стоимость:</strong> <span class="price-highlight">${mattress.totalPrice} руб</span></p>` :
+                                `<p><strong>Стоимость:</strong> <span class="price-highlight">${mattress.recommendedPrice} руб</span></p>`}
+                        </div>`;
                 }
-            }
-            
-            text += `\nДополнительное предложение:
-
-☁️Эффект облака для матраса: 990 руб. (Сумма указана за каждый метр в длину)
-
-🙈❗️Декоративная Подушка 35*35 СЮРПРИЗ (Только на момент получения вы узнаете цвет и ткань) - 290 руб.❗️
-
-🔹Подушка декоративная 40*40: 990 руб. 
-🔹Подушка классическая 40*40, толщиной 10 см: 1490 руб. 
-🔹Подушка под ноги: 1490 руб. 
-🔹Подлокотник: 1790 руб.
-🔹Подушка под спину: 1990 руб. 
-🔹Валик диаметр 14 см: 1490 руб
-
-🔸Антискользящее покрытие на выбор: 490 руб.
-- Силиконовые накладки
-- Самоклеящаяся лента-липучка
-
-👀Срок изготовления 6-13 дней
-
-🤝Гарантия 3 года!`;
-            
-            document.getElementById('dynamic-text').textContent = text;
-            document.getElementById('additional-panel').style.display = 'block';
-        }
-        
-        function copyToClipboard(element) {
-            const text = element.querySelector('div').textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                const notification = element.querySelector('.copy-notification');
-                notification.style.display = 'inline';
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 2000);
-            });
-        }
-    </script>
-</body>
-</html>
+                
+                // Общая сумма всех матрасов
+                const totalSum = mattresses.reduce((sum, m) => sum + (m.recommendedPrice * m.count), 0);
+                html +=
